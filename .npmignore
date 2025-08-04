@@ -1,0 +1,51 @@
+# Development files
+*.log
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.vscode/
+.idea/
+
+# Backup files
+*.backup
+
+# Don't include the original project files
+app/
+components/
+hooks/
+lib/
+public/
+components.json
+eslint.config.mjs
+jsconfig.json
+next.config.mjs
+postcss.config.mjs
+package.json.backup
+
+# Include only npm package files
+!template/
+!bin/
+!scripts/
+!index.js
+!README.md
+!LICENSE
