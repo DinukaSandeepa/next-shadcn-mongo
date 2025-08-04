@@ -14,57 +14,90 @@ console.log(chalk.cyan('🚀 Create Next.js + ShadCN + MongoDB App'));
 program
   .version('1.0.0')
   .description('Create a new Next.js app with ShadCN UI and MongoDB integration')
-  .argument('[project-name]', 'name of your project')
+  .argument('[project-name]', 'name of your project (use "." for current directory)')
   .option('-y, --yes', 'skip prompts and use defaults')
   .action(async (projectName, options) => {
     try {
-      // Get project name
-      if (!projectName) {
-        const response = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'projectName',
-            message: 'What is your project name?',
-            default: 'my-next-shadcn-mongo-app',
-            validate: (input) => {
-              if (!input || input.trim() === '') {
-                return 'Project name is required';
+      // Handle current directory installation
+      const isCurrentDir = projectName === '.';
+      let targetProjectName = projectName;
+      let targetDir;
+      
+      if (isCurrentDir) {
+        // Use current directory
+        targetDir = process.cwd();
+        targetProjectName = path.basename(targetDir);
+        
+        // Check if current directory is empty or has package.json
+        const files = fs.readdirSync(targetDir).filter(file => !file.startsWith('.'));
+        if (files.length > 0) {
+          if (!options.yes) {
+            const response = await inquirer.prompt([
+              {
+                type: 'confirm',
+                name: 'proceed',
+                message: 'Current directory is not empty. Do you want to proceed?',
+                default: false
               }
-              if (!/^[a-zA-Z0-9-_]+$/.test(input)) {
-                return 'Project name should only contain letters, numbers, hyphens, and underscores';
-              }
-              return true;
+            ]);
+            
+            if (!response.proceed) {
+              console.log(chalk.yellow('❌ Operation cancelled'));
+              process.exit(0);
             }
           }
-        ]);
-        projectName = response.projectName;
-      }
-
-      const targetDir = path.resolve(process.cwd(), projectName);
-      
-      // Check if directory already exists
-      if (fs.existsSync(targetDir)) {
-        const response = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'overwrite',
-            message: `Directory ${projectName} already exists. Do you want to overwrite it?`,
-            default: false
-          }
-        ]);
-        
-        if (!response.overwrite) {
-          console.log(chalk.yellow('❌ Operation cancelled'));
-          process.exit(0);
         }
-        
-        fs.removeSync(targetDir);
-      }
+      } else {
+        // Get project name if not provided
+        if (!targetProjectName) {
+          const response = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'projectName',
+              message: 'What is your project name?',
+              default: 'my-next-shadcn-mongo-app',
+              validate: (input) => {
+                if (!input || input.trim() === '') {
+                  return 'Project name is required';
+                }
+                if (!/^[a-zA-Z0-9-_]+$/.test(input)) {
+                  return 'Project name should only contain letters, numbers, hyphens, and underscores';
+                }
+                return true;
+              }
+            }
+          ]);
+          targetProjectName = response.projectName;
+        }
 
-      console.log(chalk.blue(`📁 Creating project in ${targetDir}...`));
+        targetDir = path.resolve(process.cwd(), targetProjectName);
+        
+        // Check if directory already exists
+        if (fs.existsSync(targetDir)) {
+          if (!options.yes) {
+            const response = await inquirer.prompt([
+              {
+                type: 'confirm',
+                name: 'overwrite',
+                message: `Directory ${targetProjectName} already exists. Do you want to overwrite it?`,
+                default: false
+              }
+            ]);
+            
+            if (!response.overwrite) {
+              console.log(chalk.yellow('❌ Operation cancelled'));
+              process.exit(0);
+            }
+          }
+          
+          fs.removeSync(targetDir);
+        }
+
+        // Create target directory
+        fs.ensureDirSync(targetDir);
+      }
       
-      // Create target directory
-      fs.ensureDirSync(targetDir);
+      console.log(chalk.blue(`📁 Creating project${isCurrentDir ? ' in current directory' : ` in ${targetDir}`}...`));
       
       // Copy template files
       const templateDir = path.join(__dirname, '..', 'template');
@@ -76,7 +109,7 @@ program
       const templatePackageJson = require('../package.json');
       
       const newPackageJson = {
-        name: projectName,
+        name: targetProjectName,
         version: '0.1.0',
         private: true,
         scripts: {
@@ -110,7 +143,9 @@ program
       console.log(chalk.green('✅ Project created successfully!'));
       console.log('');
       console.log(chalk.cyan('Next steps:'));
-      console.log(chalk.white(`  cd ${projectName}`));
+      if (!isCurrentDir) {
+        console.log(chalk.white(`  cd ${targetProjectName}`));
+      }
       console.log(chalk.white('  npm run dev'));
       console.log('');
       console.log(chalk.yellow('📝 Don\'t forget to:'));

@@ -155,7 +155,7 @@ Regularly update the template dependencies in `templateDependencies` and `templa
 # 1. Make changes to template or CLI
 # 2. Test locally
 npm run build-template
-node bin/cli.js test-app -y
+node bin/cli.js test-project -y
 
 # 3. Update version
 npm version patch
